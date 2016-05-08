@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-port = 9090
-host = "localhost"
+port = 9080
 
 import sys
 # your gen-py dir
@@ -18,44 +17,63 @@ from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 from thrift.server import TServer
 
-def callB(lines):
-    try:
-        # Init thrift connection and protocol handlers
-        transportA = TSocket.TSocket( host , 9080)
-        transportA = TTransport.TBufferedTransport(transportA)
-        protocolA = TBinaryProtocol.TBinaryProtocol(transportA)
+# Server implementation
+class MultiServerHandler:
+    def ServerB(self, s):
+        f = open('b.txt')
+        content = f.read()
+        f.close()
+        f = open('b.txt','w')
+        f.write(s)
+        f.write(content)
+        f.close()
+        return "Server B Done"
+        
 
-        # Set client to our MultiServer
-        clientA = MultiServer.Client(protocolA)
+# set handler to our implementation
+handler = MultiServerHandler()
 
-        # Connect to server
-        transportA.open()
+processor = MultiServer.Processor(handler)
+transport = TSocket.TServerSocket(port = port)
+tfactory = TTransport.TBufferedTransportFactory()
+pfactory = TBinaryProtocol.TBinaryProtocolFactory()
 
-        s = clientA.ServerB(lines)
-        print s
+# set server
+server = TServer.TThreadedServer(processor, transport, tfactory, pfactory)
 
-        # Close connection
-        transportA.close()
+print 'Starting server'
+server.serve()#!/usr/bin/env python
 
-    except Thrift.TException, tx:
-        print 'Something went wrong : %s' % (tx.message)
-        return "Problem in calling server B"
-    return "Server A Done"
+port = 9080
+
+import sys
+# your gen-py dir
+sys.path.append('gen-py')
+
+# MultiServer files
+from MultiServer import *
+from MultiServer.ttypes import *
+
+# Thrift files
+import os
+from thrift.transport import TSocket
+from thrift.transport import TTransport
+from thrift.protocol import TBinaryProtocol
+from thrift.server import TServer
 
 # Server implementation
 class MultiServerHandler:
-    def ServerA(self):
-        f = open('a.txt','r+')
-        a = f.readlines()
-        if len(a) < 9:
-            return "text is small "
-        else:
-            b = a[len(a)-10:]
-            callB(''.join(b))
-            f.seek(len(a)-9)
-            f.truncate()
-            return "done"
-    
+    def ServerB(self, s):
+        f = open('b.txt')
+        content = f.read()
+        f.close()
+        f = open('b.txt','w')
+        f.write(s)
+        f.write(content)
+        f.close()
+        return "Server B Done"
+        
+
 # set handler to our implementation
 handler = MultiServerHandler()
 
